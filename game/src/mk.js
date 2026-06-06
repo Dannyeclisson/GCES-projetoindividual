@@ -75,7 +75,7 @@
   };
 
   mk.controllers.Base.prototype.getOpponent = function (f) {
-    return this._opponents[f.getName(name)];
+    return this._opponents[f.getName()];
   };
 
   mk.controllers.Base.prototype.init = function (promise) {
