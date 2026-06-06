@@ -30,4 +30,15 @@ O trabalho está dividido em 10 etapas, cada uma valendo **1,0 ponto**. O foco �
 *   **Modernização:** É responsabilidade do aluno atualizar o `package.json` e as dependências do servidor para garantir compatibilidade com as versões mais recentes do Node.js.
 *   **Documentação:** O `README.md` final deve conter o passo a passo de como subir o ambiente de desenvolvimento e como visualizar o ambiente de produção.
 
+## Execução em Desenvolvimento com Docker
+
+Para subir o ambiente de desenvolvimento com hot-reload do servidor, execute na raiz do repositório:
+
+```bash
+docker build -f Dockerfile.dev -t mkjs-dev .
+docker run --rm -it -p 55555:55555 -v ${PWD}:/app mkjs-dev
+```
+
+O container inicia o backend em modo de desenvolvimento com `nodemon`. Como o código do projeto é montado por volume, alterações em `server/` e nos arquivos estáticos de `game/` ficam disponíveis imediatamente dentro do container; no navegador, basta atualizar a página para ver as mudanças de frontend.
+
 Boa sorte!
