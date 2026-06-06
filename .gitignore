@@ -17,6 +17,12 @@ dist/
 build/
 coverage/
 
+# Dependencies installed locally by npm
+/server/package-lock.json
+/server/node_modules/
+/game/package-lock.json
+package-lock.json
+
 # OS/editor temporary files
 .DS_Store
 Thumbs.db
