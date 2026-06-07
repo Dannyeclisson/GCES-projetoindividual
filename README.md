@@ -41,4 +41,20 @@ docker run --rm -it -p 55555:55555 -v ${PWD}:/app mkjs-dev
 
 O container inicia o backend em modo de desenvolvimento com `nodemon`. Como o código do projeto é montado por volume, alterações em `server/` e nos arquivos estáticos de `game/` ficam disponíveis imediatamente dentro do container; no navegador, basta atualizar a página para ver as mudanças de frontend.
 
+## Execução com Docker Compose e Postgres
+
+Para subir a aplicação junto com o banco Postgres em ambiente de desenvolvimento:
+
+```bash
+docker compose up --build
+```
+
+O `docker-compose.yml` sobe dois serviços, `app` e `db`, usando variáveis de ambiente para a conexão com o Postgres. A aplicação registra eventos simples de jogo na tabela `game_events`.
+
+Observação: o serviço `app` é exposto no host na porta `55556` (mapeada para `55555` dentro do container). Acesse a aplicação em:
+
+```
+http://localhost:55556
+```
+
 Boa sorte!

@@ -4,12 +4,13 @@
     "author": "Minko Gechev @mgechev",
     "description": "Node.js server for mk.js",
     "scripts": {
-        "dev": "nodemon server.js",
+        "dev": "node node_modules/nodemon/bin/nodemon.js server.js",
         "start": "node server.js"
     },
     "dependencies": {
-        "express": "3.x.x",
-        "socket.io": "0.9.x"
+        "express": "^4.21.2",
+        "pg": "^8.21.0",
+        "socket.io": "^4.8.3"
     },
     "devDependencies": {
         "nodemon": "^3.1.10"

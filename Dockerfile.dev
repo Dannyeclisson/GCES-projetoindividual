@@ -9,4 +9,4 @@ WORKDIR /app
 
 EXPOSE 55555
 
-CMD ["sh", "-c", "if [ ! -e /app/server/node_modules ]; then ln -s /opt/mkjs-server-deps/node_modules /app/server/node_modules; fi; cd /app/server && npm run dev"]
+CMD ["sh", "-c", "mkdir -p /app/server/node_modules; if [ -z \"$(ls -A /app/server/node_modules)\" ]; then cp -a /opt/mkjs-server-deps/node_modules/. /app/server/node_modules/; fi; cd /app/server && npm run dev"]
