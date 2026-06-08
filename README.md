@@ -57,4 +57,16 @@ Observação: o serviço `app` é exposto no host na porta `55556` (mapeada para
 http://localhost:55556
 ```
 
+Para verificar se o banco recebeu registros, rode uma ação no jogo e consulte a tabela:
+
+```bash
+docker compose exec db psql -U mkjs -d mkjs -c "SELECT id, event_type, created_at FROM game_events ORDER BY id DESC LIMIT 10;"
+```
+
+Se preferir, você também pode abrir o shell do Postgres com `docker compose exec db psql -U mkjs -d mkjs` e executar consultas manualmente.
+
+## CI Build & Lint
+
+A fase 3 adiciona o workflow [.github/workflows/ci.yml](.github/workflows/ci.yml), que roda em `push` e `pull_request`, instala as dependências com `npm ci` e executa `npm run lint` e `npm run build` dentro de `server/`.
+
 Boa sorte!
