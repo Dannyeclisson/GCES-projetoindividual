@@ -13,7 +13,10 @@
         "build:back": "node --check server.js && node --check games.js && node --check db.js",
         "build:front": "node --check ../game/src/mk.js && node --check ../game/src/movement.js",
         "test": "node --test test/games.test.js",
-        "test:fuzz": "node --test fuzz/games.fuzz.test.js"
+        "test:fuzz": "node --test fuzz/games.fuzz.test.js",
+        "security:sca": "npm audit --audit-level=high",
+        "security:sast": "eslint --config .eslintrc.security.cjs server.js games.js db.js",
+        "security": "npm run security:sca && npm run security:sast"
     },
     "dependencies": {
         "express": "^4.21.2",
@@ -22,6 +25,7 @@
     },
     "devDependencies": {
         "eslint": "^8.57.1",
+        "eslint-plugin-security": "^4.0.0",
         "nodemon": "^3.1.10"
     },
     "license": "MIT"

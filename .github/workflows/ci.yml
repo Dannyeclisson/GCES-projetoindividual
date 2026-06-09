@@ -1,4 +1,4 @@
-name: CI Build, Lint, Test & Fuzz
+name: CI Build, Lint, Test, Fuzz & Security
 
 on:
   push:
@@ -38,3 +38,11 @@ jobs:
       - name: Fuzz tests
         working-directory: server
         run: npm run test:fuzz
+
+      - name: Dependency audit
+        working-directory: server
+        run: npm run security:sca
+
+      - name: SAST
+        working-directory: server
+        run: npm run security:sast

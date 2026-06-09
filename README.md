@@ -91,4 +91,27 @@ npm run test:fuzz
 
 O workflow de CI tambem executa `npm run test:fuzz` apos os testes unitarios.
 
+## Seguranca SAST & SCA
+
+A fase 6 adiciona verificacoes de seguranca ao pipeline de CI:
+
+- SCA: `npm audit --audit-level=high`, para falhar o pipeline apenas em vulnerabilidades altas ou criticas nas dependencias.
+- SAST: `eslint-plugin-security`, para detectar padroes inseguros no codigo backend Node.js. Achados do SAST sao reportados como avisos para nao bloquear a fase por falsos positivos simples, como acesso controlado ao mapa de partidas em memoria.
+
+Para executar localmente:
+
+```bash
+cd server
+npm run security
+```
+
+Tambem e possivel rodar cada verificacao separadamente:
+
+```bash
+npm run security:sca
+npm run security:sast
+```
+
+O workflow de CI executa as verificacoes de seguranca depois dos testes unitarios e de fuzzing.
+
 Boa sorte!
