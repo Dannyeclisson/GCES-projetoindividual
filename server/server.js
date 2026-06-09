@@ -23,6 +23,15 @@ var Responses = {
     JOIN_GAME: 'join-game'
   };
 
+app.get('/api/game-history', async function (req, res) {
+  try {
+    res.json(await db.listRecentEvents(20));
+  } catch (error) {
+    console.warn('Could not load game history: ' + error.message);
+    res.json([]);
+  }
+});
+
 io.on('connection', function (socket) {
   db.logEvent('socket_connected', {
     socketId: socket.id

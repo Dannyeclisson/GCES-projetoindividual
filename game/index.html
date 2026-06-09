@@ -8,7 +8,48 @@
     <link rel="stylesheet" href="styles/styles.css" />
 </head>
 <body>
-    <table>
+    <section id="lobby">
+        <div class="lobby-panel">
+            <div class="lobby-header">
+                <h1>mk.js Lobby</h1>
+                <button id="refreshHistory" type="button">Atualizar historico</button>
+            </div>
+
+            <form id="lobbyForm" class="lobby-form">
+                <label for="gameType">Tipo de partida</label>
+                <select id="gameType" name="gameType">
+                    <option value="network">Multiplayer online</option>
+                </select>
+
+                <fieldset>
+                    <legend>Voce vai hospedar?</legend>
+                    <label>
+                        <input type="radio" name="hostChoice" value="yes" checked>
+                        Hospedar partida
+                    </label>
+                    <label>
+                        <input type="radio" name="hostChoice" value="no">
+                        Entrar em partida existente
+                    </label>
+                </fieldset>
+
+                <label for="gameName">Nome da partida</label>
+                <input id="gameName" name="gameName" type="text" maxlength="80" required>
+
+                <button type="submit">Conectar</button>
+                <p id="lobbyMessage" class="lobby-message" aria-live="polite"></p>
+            </form>
+
+            <section class="history-section">
+                <h2>Historico de partidas</h2>
+                <div id="historyList" class="history-list">
+                    <p class="history-empty">Carregando historico...</p>
+                </div>
+            </section>
+        </div>
+    </section>
+
+    <table id="gameView">
     <thead>
         <th>
             Arena
@@ -87,7 +128,7 @@
                     $('utils').style.visibility = 'visible';
                 };
                 
-                var options = {
+                var baseOptions = {
                     arena: {
                         container: document.getElementById('arena'),
                         arena: mk.arenas.types.THRONE_ROOM
@@ -103,18 +144,140 @@
                         }
 
                     },
-                    isHost: /^yes$/i.test(prompt('Are you going to be host?')),
-                    gameName: prompt('Enter game name:'),
-                    gameType: 'network'
                 };
 
-                function startNewGame() {
+                function showLobby(message) {
+                    $('gameView').style.display = 'none';
+                    $('lobby').style.display = 'block';
+                    $('arena').style.visibility = 'hidden';
+                    $('utils').style.visibility = 'hidden';
+                    $('loading').style.visibility = 'visible';
+                    $('player1Life').style.width = '100%';
+                    $('player2Life').style.width = '100%';
+                    if (message) {
+                        $('lobbyMessage').innerHTML = message;
+                    }
+                    loadHistory();
+                }
+
+                function showGame() {
+                    $('lobby').style.display = 'none';
+                    $('gameView').style.display = 'table';
+                }
+
+                function formatDate(value) {
+                    if (!value) {
+                        return '';
+                    }
+                    return new Date(value).toLocaleString();
+                }
+
+                function escapeHtml(value) {
+                    return String(value).replace(/[&<>"']/g, function (char) {
+                        return {
+                            '&': '&amp;',
+                            '<': '&lt;',
+                            '>': '&gt;',
+                            '"': '&quot;',
+                            "'": '&#39;'
+                        }[char];
+                    });
+                }
+
+                function formatEvent(event) {
+                    var payload = event.payload || {},
+                        gameName = payload.gameName || 'partida sem nome';
+
+                    if (event.event_type === 'game_created') {
+                        return 'Partida "' + gameName + '" hospedada';
+                    }
+                    if (event.event_type === 'game_joined') {
+                        return 'Jogador entrou em "' + gameName + '"';
+                    }
+                    if (event.event_type === 'socket_connected') {
+                        return 'Jogador conectado ao lobby';
+                    }
+                    return event.event_type;
+                }
+
+                function renderHistory(events) {
+                    var html = '',
+                        i;
+
+                    if (!events.length) {
+                        $('historyList').innerHTML = '<p class="history-empty">Nenhum historico registrado ainda.</p>';
+                        return;
+                    }
+
+                    for (i = 0; i < events.length; i += 1) {
+                        html += '<div class="history-item">' +
+                            '<strong>' + escapeHtml(formatEvent(events[i])) + '</strong>' +
+                            '<span>' + escapeHtml(formatDate(events[i].created_at)) + '</span>' +
+                            '</div>';
+                    }
+                    $('historyList').innerHTML = html;
+                }
+
+                function loadHistory() {
+                    fetch('/api/game-history')
+                        .then(function (response) {
+                            return response.json();
+                        })
+                        .then(renderHistory)
+                        .catch(function () {
+                            $('historyList').innerHTML = '<p class="history-empty">Nao foi possivel carregar o historico.</p>';
+                        });
+                }
+
+                function startNewGame(gameOptions) {
+                    var options = {
+                        arena: baseOptions.arena,
+                        fighters: baseOptions.fighters,
+                        callbacks: {
+                            attack: baseOptions.callbacks.attack,
+                            'game-end': function () {
+                                setTimeout(function () {
+                                    if (mk.game) {
+                                        mk.reset();
+                                    }
+                                    showLobby('Partida finalizada.');
+                                }, 1200);
+                            }
+                        },
+                        isHost: gameOptions.isHost,
+                        gameName: gameOptions.gameName,
+                        gameType: gameOptions.gameType
+                    };
+
+                    showGame();
                     mk.start(options).ready(function () {
                         startGame();
                     });
                 }
-                
-                startNewGame();
+
+                $('lobbyForm').onsubmit = function (event) {
+                    var form = event.target,
+                        gameName = form.gameName.value.trim(),
+                        isHost = form.hostChoice.value === 'yes';
+
+                    event.preventDefault();
+
+                    if (!gameName) {
+                        $('lobbyMessage').innerHTML = 'Informe o nome da partida.';
+                        return;
+                    }
+
+                    $('lobbyMessage').innerHTML = '';
+                    startNewGame({
+                        isHost: isHost,
+                        gameName: gameName,
+                        gameType: form.gameType.value
+                    });
+                };
+
+                $('refreshHistory').onclick = loadHistory;
+
+                showLobby();
                 
             }());
 

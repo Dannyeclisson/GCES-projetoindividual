@@ -71,7 +71,25 @@ async function logEvent(eventType, payload) {
   }
 }
 
+async function listRecentEvents(limit) {
+  var result;
+
+  if (!initialized) {
+    return [];
+  }
+
+  result = await pool.query(
+    "SELECT id, event_type, payload, created_at FROM game_events " +
+      "WHERE event_type IN ('game_created', 'game_joined') " +
+      "ORDER BY created_at DESC, id DESC LIMIT $1",
+    [limit || 20]
+  );
+
+  return result.rows;
+}
+
 module.exports = {
   initDatabase: initDatabase,
-  logEvent: logEvent
+  logEvent: logEvent,
+  listRecentEvents: listRecentEvents
 };
