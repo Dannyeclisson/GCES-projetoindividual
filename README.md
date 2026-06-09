@@ -69,4 +69,15 @@ Se preferir, você também pode abrir o shell do Postgres com `docker compose ex
 
 A fase 3 adiciona o workflow [.github/workflows/ci.yml](.github/workflows/ci.yml), que roda em `push` e `pull_request`, instala as dependências com `npm ci` e executa `npm run lint` e `npm run build` dentro de `server/`.
 
+## Testes Unitarios
+
+A fase 4 adiciona testes unitarios com o Node Test Runner. Para executar localmente:
+
+```bash
+cd server
+npm test
+```
+
+Na parte A da fase 4, existe um teste intencionalmente falhando para registrar a evidencia de CI quebrando antes da correcao.
+
 Boa sorte!

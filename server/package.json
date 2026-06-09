@@ -11,7 +11,8 @@
         "lint:front": "eslint ../game/src/*.js",
         "build": "npm run build:back && npm run build:front",
         "build:back": "node --check server.js && node --check games.js && node --check db.js",
-        "build:front": "node --check ../game/src/mk.js && node --check ../game/src/movement.js"
+        "build:front": "node --check ../game/src/mk.js && node --check ../game/src/movement.js",
+        "test": "node --test"
     },
     "dependencies": {
         "express": "^4.21.2",
