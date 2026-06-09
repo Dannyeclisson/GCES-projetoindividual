@@ -1,4 +1,4 @@
-name: CI Build, Lint & Test
+name: CI Build, Lint, Test & Fuzz
 
 on:
   push:
@@ -34,3 +34,7 @@ jobs:
       - name: Unit tests
         working-directory: server
         run: npm test
+
+      - name: Fuzz tests
+        working-directory: server
+        run: npm run test:fuzz

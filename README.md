@@ -80,4 +80,15 @@ npm test
 
 Na parte A da fase 4, existe um teste intencionalmente falhando para registrar a evidencia de CI quebrando antes da correcao.
 
+## Testes de Fuzzing
+
+A fase 5 adiciona testes de fuzzing no backend para validar entradas inesperadas em nomes de jogos recebidos pelos eventos de socket `create-game` e `join-game`. Para executar localmente:
+
+```bash
+cd server
+npm run test:fuzz
+```
+
+O workflow de CI tambem executa `npm run test:fuzz` apos os testes unitarios.
+
 Boa sorte!

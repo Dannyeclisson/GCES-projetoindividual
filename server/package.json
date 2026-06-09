@@ -12,7 +12,8 @@
         "build": "npm run build:back && npm run build:front",
         "build:back": "node --check server.js && node --check games.js && node --check db.js",
         "build:front": "node --check ../game/src/mk.js && node --check ../game/src/movement.js",
-        "test": "node --test"
+        "test": "node --test test/games.test.js",
+        "test:fuzz": "node --test fuzz/games.fuzz.test.js"
     },
     "dependencies": {
         "express": "^4.21.2",
