@@ -77,6 +77,9 @@ GameCollection.prototype.getGame = function (game) {
 };
 
 GameCollection.prototype.createGame = function (id) {
+  if (typeof id !== 'string' || !id.trim()) {
+    return false;
+  }
   if (this._games[id]) {
     return false;
   }
