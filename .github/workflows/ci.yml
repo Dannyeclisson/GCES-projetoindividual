@@ -49,6 +49,17 @@ jobs:
         working-directory: server
         run: npm run security:sast
 
+      - name: Check SonarCloud token
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "::error::SONAR_TOKEN is empty or unavailable for this workflow run."
+            echo "::error::Check if the secret was created before this run, if it is a repository Actions secret, and if this run is not from an untrusted fork."
+            exit 1
+          fi
+          echo "SONAR_TOKEN is available for this workflow run."
+
       - name: SonarCloud analysis
         uses: SonarSource/sonarqube-scan-action@v7
         env:
