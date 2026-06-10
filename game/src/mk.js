@@ -41,6 +41,9 @@
     var game = this.game;
     if (typeof game.reset === 'function')
         game.reset();
+    if (typeof Movement !== 'undefined' && typeof Movement.stop === 'function') {
+      Movement.stop();
+    }
     game.fighters.forEach(function (f) {
       f.getMove().stop();
     });
@@ -301,6 +304,7 @@
 
   mk.controllers.WebcamInput = function (options) {
     mk.controllers.Basic.call(this, options);
+    this._webcamContainer = options && options.webcamContainer;
   };
 
   mk.controllers.WebcamInput.prototype = new mk.controllers.Basic();
@@ -312,12 +316,13 @@
   };
 
   mk.controllers.WebcamInput.prototype._addMovementHandlers = function () {
-    if (Movement === undefined) {
+    if (typeof Movement === 'undefined') {
       throw 'The WebcamInput requires movement.js';
     }
     var self = this,
       f = this.fighters[0];
     Movement.init({
+      container: this._webcamContainer,
       movementChanged: function (m) {
         var move = self._getMoveByMovement(m);
         self._moveFighter(f, move);
@@ -427,6 +432,65 @@
   mk.controllers.Multiplayer.prototype._moveFighter = function (fighter, move) {
     if (move) {
       fighter.setMove(move);
+    }
+  };
+
+  mk.controllers.Cpu = function (options) {
+    mk.controllers.Basic.call(this, options);
+    this._cpuTimer = null;
+  };
+
+  mk.controllers.Cpu.prototype = new mk.controllers.Basic();
+
+  mk.controllers.Cpu.prototype._initialize = function () {
+    this._player = 0;
+    this._addHandlers();
+    this._addCpuHandlers();
+  };
+
+  mk.controllers.Cpu.prototype._addCpuHandlers = function () {
+    var self = this,
+      moves = mk.moves.types;
+    this._cpuTimer = setInterval(function () {
+      var player = self.fighters[0],
+        cpu = self.fighters[1],
+        cpuIsRight,
+        distance,
+        random = Math.random(),
+        move = moves.STAND;
+
+      if (!player || !cpu || player.getLife() <= 0 || cpu.getLife() <= 0) {
+        return;
+      }
+
+      cpuIsRight = cpu.getX() > player.getX();
+      distance = Math.abs(player.getX() - cpu.getX());
+
+      if (distance > 115) {
+        move = cpuIsRight ? moves.WALK_BACKWARD : moves.WALK;
+      } else if (distance < 45) {
+        move = cpuIsRight ? moves.WALK : moves.WALK_BACKWARD;
+      } else if (random < 0.2) {
+        move = moves.HIGH_PUNCH;
+      } else if (random < 0.4) {
+        move = moves.HIGH_KICK;
+      } else if (random < 0.58) {
+        move = moves.LOW_KICK;
+      } else if (random < 0.72) {
+        move = moves.LOW_PUNCH;
+      } else if (random < 0.86) {
+        move = moves.BLOCK;
+      } else if (random < 0.94) {
+        move = moves.SQUAT;
+      }
+      cpu.setMove(move);
+    }, 650);
+  };
+
+  mk.controllers.Cpu.prototype.reset = function () {
+    if (this._cpuTimer) {
+      clearInterval(this._cpuTimer);
+      this._cpuTimer = null;
     }
   };
 
@@ -568,6 +632,9 @@
         break;
       case 'multiplayer':
         mk.game = new mk.controllers.Multiplayer(options);
+        break;
+      case 'cpu':
+        mk.game = new mk.controllers.Cpu(options);
         break;
       case 'webcaminput':
         mk.game = new mk.controllers.WebcamInput(options);

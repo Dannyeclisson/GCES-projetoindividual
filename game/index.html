@@ -19,9 +19,12 @@
                 <label for="gameType">Tipo de partida</label>
                 <select id="gameType" name="gameType">
                     <option value="network">Multiplayer online</option>
+                    <option value="multiplayer">Local - dois jogadores</option>
+                    <option value="cpu">Local - contra CPU</option>
+                    <option value="webcaminput">Local - teclado contra webcam</option>
                 </select>
 
-                <fieldset>
+                <fieldset id="networkOptions">
                     <legend>Voce vai hospedar?</legend>
                     <label>
                         <input type="radio" name="hostChoice" value="yes" checked>
@@ -33,10 +36,10 @@
                     </label>
                 </fieldset>
 
-                <label for="gameName">Nome da partida</label>
+                <label id="gameNameLabel" for="gameName">Nome da partida</label>
                 <input id="gameName" name="gameName" type="text" maxlength="80" required>
 
-                <button type="submit">Conectar</button>
+                <button id="startButton" type="submit">Conectar</button>
                 <p id="lobbyMessage" class="lobby-message" aria-live="polite"></p>
             </form>
 
@@ -246,7 +249,8 @@
                         },
                         isHost: gameOptions.isHost,
                         gameName: gameOptions.gameName,
-                        gameType: gameOptions.gameType
+                        gameType: gameOptions.gameType,
+                        webcamContainer: $('webcam-parent')
                     };
 
                     showGame();
@@ -258,11 +262,12 @@
                 $('lobbyForm').onsubmit = function (event) {
                     var form = event.target,
                         gameName = form.gameName.value.trim(),
+                        gameType = form.gameType.value,
                         isHost = form.hostChoice.value === 'yes';
 
                     event.preventDefault();
 
-                    if (!gameName) {
+                    if (gameType === 'network' && !gameName) {
                         $('lobbyMessage').innerHTML = 'Informe o nome da partida.';
                         return;
                     }
@@ -271,12 +276,27 @@
                     startNewGame({
                         isHost: isHost,
                         gameName: gameName,
-                        gameType: form.gameType.value
+                        gameType: gameType
                     });
                 };
 
-                $('refreshHistory').onclick = loadHistory;
+                function updateGameTypeFields() {
+                    var isNetwork = $('gameType').value === 'network';
 
+                    $('networkOptions').style.display = isNetwork ? 'block' : 'none';
+                    $('gameNameLabel').style.display = isNetwork ? 'block' : 'none';
+                    $('gameName').style.display = isNetwork ? 'block' : 'none';
+                    $('gameName').required = isNetwork;
+                    $('startButton').innerHTML = isNetwork ? 'Conectar' : 'Iniciar partida';
+                    if (!isNetwork) {
+                        $('lobbyMessage').innerHTML = '';
+                    }
+                }
+
+                $('refreshHistory').onclick = loadHistory;
+                $('gameType').onchange = updateGameTypeFields;
+
+                updateGameTypeFields();
                 showLobby();
                 
             }());
