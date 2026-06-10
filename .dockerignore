@@ -1,0 +1,16 @@
+.git
+.github
+.codex
+.agents
+node_modules
+server/node_modules
+coverage
+.scannerwork
+npm-debug.log
+*.log
+*.tmp
+Dockerfile.dev
+docker-compose.yml
+docker-compose.prod.yml
+README.md
+ComoRodar.md
