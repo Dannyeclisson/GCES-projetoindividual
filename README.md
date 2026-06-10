@@ -30,4 +30,102 @@ O trabalho está dividido em 10 etapas, cada uma valendo **1,0 ponto**. O foco �
 *   **Modernização:** É responsabilidade do aluno atualizar o `package.json` e as dependências do servidor para garantir compatibilidade com as versões mais recentes do Node.js.
 *   **Documentação:** O `README.md` final deve conter o passo a passo de como subir o ambiente de desenvolvimento e como visualizar o ambiente de produção.
 
+## Execução em Desenvolvimento com Docker
+
+Para subir o ambiente de desenvolvimento com hot-reload do servidor, execute na raiz do repositório:
+
+```bash
+docker build -f Dockerfile.dev -t mkjs-dev .
+docker run --rm -it -p 55555:55555 -v ${PWD}:/app mkjs-dev
+```
+
+O container inicia o backend em modo de desenvolvimento com `nodemon`. Como o código do projeto é montado por volume, alterações em `server/` e nos arquivos estáticos de `game/` ficam disponíveis imediatamente dentro do container; no navegador, basta atualizar a página para ver as mudanças de frontend.
+
+## Execução com Docker Compose e Postgres
+
+Para subir a aplicação junto com o banco Postgres em ambiente de desenvolvimento:
+
+```bash
+docker compose up --build
+```
+
+O `docker-compose.yml` sobe dois serviços, `app` e `db`, usando variáveis de ambiente para a conexão com o Postgres. A aplicação registra eventos simples de jogo na tabela `game_events`.
+
+Observação: o serviço `app` é exposto no host na porta `55556` (mapeada para `55555` dentro do container). Acesse a aplicação em:
+
+```
+http://localhost:55556
+```
+
+Para verificar se o banco recebeu registros, rode uma ação no jogo e consulte a tabela:
+
+```bash
+docker compose exec db psql -U mkjs -d mkjs -c "SELECT id, event_type, created_at FROM game_events ORDER BY id DESC LIMIT 10;"
+```
+
+Se preferir, você também pode abrir o shell do Postgres com `docker compose exec db psql -U mkjs -d mkjs` e executar consultas manualmente.
+
+## CI Build & Lint
+
+A fase 3 adiciona o workflow [.github/workflows/ci.yml](.github/workflows/ci.yml), que roda em `push` e `pull_request`, instala as dependências com `npm ci` e executa `npm run lint` e `npm run build` dentro de `server/`.
+
+## Testes Unitarios
+
+A fase 4 adiciona testes unitarios com o Node Test Runner. Para executar localmente:
+
+```bash
+cd server
+npm test
+```
+
+Na parte A da fase 4, existe um teste intencionalmente falhando para registrar a evidencia de CI quebrando antes da correcao.
+
+## Testes de Fuzzing
+
+A fase 5 adiciona testes de fuzzing no backend para validar entradas inesperadas em nomes de jogos recebidos pelos eventos de socket `create-game` e `join-game`. Para executar localmente:
+
+```bash
+cd server
+npm run test:fuzz
+```
+
+O workflow de CI tambem executa `npm run test:fuzz` apos os testes unitarios.
+
+## Seguranca SAST & SCA
+
+A fase 6 adiciona verificacoes de seguranca ao pipeline de CI:
+
+- SCA: `npm audit --audit-level=high`, para falhar o pipeline apenas em vulnerabilidades altas ou criticas nas dependencias.
+- SAST: `eslint-plugin-security`, para detectar padroes inseguros no codigo backend Node.js. Achados do SAST sao reportados como avisos para nao bloquear a fase por falsos positivos simples, como acesso controlado ao mapa de partidas em memoria.
+
+Para executar localmente:
+
+```bash
+cd server
+npm run security
+```
+
+Tambem e possivel rodar cada verificacao separadamente:
+
+```bash
+npm run security:sca
+npm run security:sast
+```
+
+O workflow de CI executa as verificacoes de seguranca depois dos testes unitarios e de fuzzing.
+
+## SonarCloud
+
+A fase 7 integra analise de qualidade de codigo com SonarCloud no GitHub Actions. A configuracao fica em `sonar-project.properties` e analisa os diretorios `server/` e `game/`, ignorando `server/node_modules/` e `game/images/`.
+
+Para configurar no SonarCloud:
+
+1. Crie/importe o projeto do repositorio `Dannyeclisson/GCES-projetoindividual`.
+2. Confirme se o `projectKey` e a `organization` em `sonar-project.properties` batem com os valores mostrados no SonarCloud.
+3. No GitHub, crie o secret `SONAR_TOKEN` em `Settings > Secrets and variables > Actions`.
+
+O CI executa a analise com `SonarSource/sonarqube-scan-action` depois de build, lint, testes, fuzzing e verificacoes de seguranca. O token e lido por `${{ secrets.SONAR_TOKEN }}` e nao fica salvo no repositorio.
+
+Estado de cobertura: os testes atuais usam Node Test Runner, mas ainda nao geram relatorio LCOV versionado para envio ao SonarCloud. Por isso, nesta fase a analise envia metricas de qualidade do codigo sem importar cobertura; quando houver LCOV, configure `sonar.javascript.lcov.reportPaths`.
+
 Boa sorte!

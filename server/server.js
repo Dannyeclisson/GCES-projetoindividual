@@ -1,13 +1,14 @@
 var express = require('express'),
     app = express(),
     server = require('http').createServer(app),
-    io = require('socket.io').listen(server),
+  io = require('socket.io')(server),
     GameCollection = require('./games.js').GameCollection,
-    games = new GameCollection();
+  games = new GameCollection(),
+  db = require('./db.js');
 
-app.configure(function () {
-  app.use(express.static(__dirname + '/../game'));
-});
+app.use(express.static(__dirname + '/../game'));
+
+db.initDatabase();
 
 server.listen(55555);
 
@@ -22,10 +23,27 @@ var Responses = {
     JOIN_GAME: 'join-game'
   };
 
-io.sockets.on('connection', function (socket) {
+app.get('/api/game-history', async function (req, res) {
+  try {
+    res.json(await db.listRecentEvents(20));
+  } catch (error) {
+    console.warn('Could not load game history: ' + error.message);
+    res.json([]);
+  }
+});
+
+io.on('connection', function (socket) {
+  db.logEvent('socket_connected', {
+    socketId: socket.id
+  });
+
   socket.on(Requests.CREATE_GAME, function (gameName) {
     if (games.createGame(gameName)) {
       games.getGame(gameName).addPlayer(socket);
+      db.logEvent('game_created', {
+        gameName: gameName,
+        socketId: socket.id
+      });
       socket.emit('response', Responses.SUCCESS);
     } else {
       socket.emit('response', Responses.GAME_EXISTS);
@@ -37,6 +55,10 @@ io.sockets.on('connection', function (socket) {
       socket.emit('response', Responses.GAME_NOT_EXISTS);
     } else {
       if (game.addPlayer(socket)) {
+        db.logEvent('game_joined', {
+          gameName: gameName,
+          socketId: socket.id
+        });
         socket.emit('response', Responses.SUCCESS);
       } else {
         socket.emit('response', Responses.GAME_FULL);

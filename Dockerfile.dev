@@ -1,0 +1,12 @@
+FROM node:20-alpine
+
+WORKDIR /opt/mkjs-server-deps
+
+COPY server/package.json ./
+RUN npm install
+
+WORKDIR /app
+
+EXPOSE 55555
+
+CMD ["sh", "-c", "mkdir -p /app/server/node_modules; if [ -z \"$(ls -A /app/server/node_modules)\" ]; then cp -a /opt/mkjs-server-deps/node_modules/. /app/server/node_modules/; fi; cd /app/server && npm run dev"]

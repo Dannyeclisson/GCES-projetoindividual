@@ -3,9 +3,30 @@
     "version": "0.0.1",
     "author": "Minko Gechev @mgechev",
     "description": "Node.js server for mk.js",
+    "scripts": {
+        "dev": "node node_modules/nodemon/bin/nodemon.js server.js",
+        "start": "node server.js",
+        "lint": "npm run lint:back && npm run lint:front",
+        "lint:back": "eslint server.js games.js db.js",
+        "lint:front": "eslint ../game/src/*.js",
+        "build": "npm run build:back && npm run build:front",
+        "build:back": "node --check server.js && node --check games.js && node --check db.js",
+        "build:front": "node --check ../game/src/mk.js && node --check ../game/src/movement.js",
+        "test": "node --test test/games.test.js",
+        "test:fuzz": "node --test fuzz/games.fuzz.test.js",
+        "security:sca": "npm audit --audit-level=high",
+        "security:sast": "eslint --config .eslintrc.security.cjs server.js games.js db.js",
+        "security": "npm run security:sca && npm run security:sast"
+    },
     "dependencies": {
-        "express": "3.x.x",
-        "socket.io": "0.9.x"
+        "express": "^4.21.2",
+        "pg": "^8.21.0",
+        "socket.io": "^4.8.3"
+    },
+    "devDependencies": {
+        "eslint": "^8.57.1",
+        "eslint-plugin-security": "^4.0.0",
+        "nodemon": "^3.1.10"
     },
     "license": "MIT"
 }

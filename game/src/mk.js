@@ -1,4 +1,4 @@
-;(function () {
+(function () {
 
   var mk = {};
 
@@ -228,8 +228,7 @@
       f = this.fighters[p],
       leftOrient = mk.fighters.orientations.LEFT,
       rightOrient = mk.fighters.orientations.RIGHT,
-      orient = f.getOrientation(),
-      self = this;
+      orient = f.getOrientation();
 
     if (f.getMove().type === m.SQUAT && !pressed[k.DOWN]) {
       return m.STAND_UP;
@@ -344,8 +343,7 @@
   mk.controllers.WebcamInput.prototype._getMoveByMovement = function (move) {
     var mkMoves = mk.moves.types,
       pos = Movement.positions,
-      m = Movement.movements,
-      current = this.fighters[this._player].getMove().type;
+      m = Movement.movements;
     if (move === pos.LEFT) {
       return mkMoves.WALK_BACKWARD;
     } else if (move === pos.RIGHT) {
@@ -800,8 +798,7 @@
   mk.moves.Move.prototype._action = function () {};
 
   mk.moves.Move.prototype._nextStep = function (callback) {
-    var img = document.createElement('img'),
-      conf = mk.config;
+    var img = document.createElement('img');
 
     img = this._steps[this.owner.getOrientation()][this._currentStep];
     this.owner.setState(img);
@@ -1621,8 +1618,7 @@
     this.moves[mk.moves.types.FORWARD_JUMP] = new mk.moves.ForwardJump(this);
     this.moves[mk.moves.types.BACKWARD_JUMP] = new mk.moves.BackwardJump(this);
 
-    var self = this,
-      initialized = 0,
+    var initialized = 0,
       total = Object.keys(this.moves).length;
 
     for (var move in this.moves) {
