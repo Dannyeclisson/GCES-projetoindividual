@@ -14,8 +14,8 @@ spec:
     spec:
       containers:
         - name: app
-          image: mkjs-backend-prod:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/dannyeclisson/gces-projetoindividual-backend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 55555
           env:

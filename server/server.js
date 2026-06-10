@@ -4,13 +4,16 @@ var express = require('express'),
   io = require('socket.io')(server),
     GameCollection = require('./games.js').GameCollection,
   games = new GameCollection(),
-  db = require('./db.js');
+  db = require('./db.js'),
+  port = Number(process.env.PORT || 55555);
 
 app.use(express.static(__dirname + '/../game'));
 
 db.initDatabase();
 
-server.listen(55555);
+server.listen(port, '0.0.0.0', function () {
+  console.log('Server running on port ' + port);
+});
 
 var Responses = {
     SUCCESS: 0,
@@ -30,6 +33,12 @@ app.get('/api/game-history', async function (req, res) {
     console.warn('Could not load game history: ' + error.message);
     res.json([]);
   }
+});
+
+app.get('/health', function (req, res) {
+  res.json({
+    status: 'ok'
+  });
 });
 
 io.on('connection', function (socket) {

@@ -14,8 +14,8 @@ spec:
     spec:
       containers:
         - name: web
-          image: mkjs-prod:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/dannyeclisson/gces-projetoindividual-web:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
           readinessProbe:
