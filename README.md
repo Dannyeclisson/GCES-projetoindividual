@@ -114,4 +114,18 @@ npm run security:sast
 
 O workflow de CI executa as verificacoes de seguranca depois dos testes unitarios e de fuzzing.
 
+## SonarCloud
+
+A fase 7 integra analise de qualidade de codigo com SonarCloud no GitHub Actions. A configuracao fica em `sonar-project.properties` e analisa os diretorios `server/` e `game/`, ignorando `server/node_modules/` e `game/images/`.
+
+Para configurar no SonarCloud:
+
+1. Crie/importe o projeto do repositorio `Dannyeclisson/GCES-projetoindividual`.
+2. Confirme se o `projectKey` e a `organization` em `sonar-project.properties` batem com os valores mostrados no SonarCloud.
+3. No GitHub, crie o secret `SONAR_TOKEN` em `Settings > Secrets and variables > Actions`.
+
+O CI executa a analise com `SonarSource/sonarqube-scan-action` depois de build, lint, testes, fuzzing e verificacoes de seguranca. O token e lido por `${{ secrets.SONAR_TOKEN }}` e nao fica salvo no repositorio.
+
+Estado de cobertura: os testes atuais usam Node Test Runner, mas ainda nao geram relatorio LCOV versionado para envio ao SonarCloud. Por isso, nesta fase a analise envia metricas de qualidade do codigo sem importar cobertura; quando houver LCOV, configure `sonar.javascript.lcov.reportPaths`.
+
 Boa sorte!
