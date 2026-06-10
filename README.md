@@ -65,6 +65,123 @@ docker compose exec db psql -U mkjs -d mkjs -c "SELECT id, event_type, created_a
 
 Se preferir, você também pode abrir o shell do Postgres com `docker compose exec db psql -U mkjs -d mkjs` e executar consultas manualmente.
 
+## Execucao em Producao com Docker
+
+A fase 8 adiciona uma containerizacao de producao separada do ambiente de desenvolvimento.
+
+Arquivos principais:
+
+- `Dockerfile.prod`: multi-stage build com imagens Alpine. O alvo final `web-prod` usa Nginx para servir o frontend; o alvo `backend-prod` gera a imagem Node.js enxuta do backend sem dependencias de desenvolvimento.
+- `nginx.prod.conf`: configuracao do Nginx para servir arquivos estaticos e encaminhar `/socket.io/` e `/api/` para o backend.
+- `docker-compose.prod.yml`: stack de producao com `web`, `app` e `db`.
+
+Para validar somente a imagem final do frontend em Nginx:
+
+```bash
+docker build -f Dockerfile.prod -t mkjs-prod .
+docker run --rm -p 8080:80 mkjs-prod
+```
+
+Acesse:
+
+```text
+http://localhost:8080
+```
+
+Para subir a stack completa de producao com frontend, backend e Postgres:
+
+```bash
+docker compose -p mkjs-prod -f docker-compose.prod.yml up --build
+```
+
+Nesse modo, apenas o Nginx publica porta no host:
+
+```text
+http://localhost:8080
+```
+
+O backend fica acessivel apenas dentro da rede Docker na porta `55555`, e o Postgres fica acessivel apenas dentro da rede Docker na porta `5432`.
+
+Comandos uteis de validacao:
+
+```bash
+docker compose -p mkjs-prod -f docker-compose.prod.yml ps
+docker compose -p mkjs-prod -f docker-compose.prod.yml logs web
+docker compose -p mkjs-prod -f docker-compose.prod.yml logs app
+docker compose -p mkjs-prod -f docker-compose.prod.yml logs db
+```
+
+## Infraestrutura com Kubernetes
+
+A fase 9 adiciona manifestos Kubernetes no diretorio `k8s/` para executar a aplicacao em um cluster local.
+
+Recursos criados:
+
+- `ConfigMap` `mkjs-config` com host, porta e nome do banco.
+- `Secret` `mkjs-postgres-secret` com usuario e senha do Postgres.
+- `Deployment`, `Service` interno e `PersistentVolumeClaim` do Postgres.
+- `Deployment` e `Service` interno do backend Node.js.
+- `Deployment` e `Service` do frontend Nginx.
+
+O Postgres usa `ClusterIP` e nao publica porta externa. O backend tambem fica interno ao cluster; o acesso local recomendado e pelo service do Nginx com `port-forward`.
+
+Antes de aplicar, gere as imagens de producao usadas pelos manifests:
+
+```bash
+docker build -f Dockerfile.prod --target backend-prod -t mkjs-backend-prod:latest .
+docker build -f Dockerfile.prod -t mkjs-prod:latest .
+```
+
+Em Minikube, execute os builds dentro do Docker daemon do cluster:
+
+```bash
+minikube docker-env
+```
+
+Depois aplique o comando indicado pelo Minikube para configurar o terminal e rode os dois `docker build` novamente.
+
+Em Kind, carregue as imagens no cluster depois do build:
+
+```bash
+kind load docker-image mkjs-backend-prod:latest
+kind load docker-image mkjs-prod:latest
+```
+
+Para aplicar os manifestos:
+
+```bash
+kubectl apply -f k8s/
+```
+
+Comandos de validacao:
+
+```bash
+kubectl get pods
+kubectl get services
+kubectl get pvc
+kubectl logs deployment/mkjs-app
+kubectl logs deployment/mkjs-web
+kubectl logs deployment/postgres
+```
+
+Para acessar localmente:
+
+```bash
+kubectl port-forward service/mkjs-web 8080:80
+```
+
+Acesse:
+
+```text
+http://localhost:8080
+```
+
+Para remover os recursos:
+
+```bash
+kubectl delete -f k8s/
+```
+
 ## CI Build & Lint
 
 A fase 3 adiciona o workflow [.github/workflows/ci.yml](.github/workflows/ci.yml), que roda em `push` e `pull_request`, instala as dependências com `npm ci` e executa `npm run lint` e `npm run build` dentro de `server/`.
