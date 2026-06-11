@@ -13,6 +13,7 @@
         "build:back": "node --check server.js && node --check games.js && node --check db.js",
         "build:front": "node --check ../game/src/mk.js && node --check ../game/src/movement.js",
         "test": "node --test test/games.test.js",
+        "test:coverage": "c8 --reporter=lcov --reporter=text --check-coverage --lines 80 --functions 80 --branches 80 --statements 80 node --test test/*.test.js fuzz/*.test.js",
         "test:fuzz": "node --test fuzz/games.fuzz.test.js",
         "security:sca": "npm audit --audit-level=high",
         "security:sast": "eslint --config .eslintrc.security.cjs server.js games.js db.js",
@@ -24,6 +25,7 @@
         "socket.io": "^4.8.3"
     },
     "devDependencies": {
+        "c8": "^11.0.0",
         "eslint": "^8.57.1",
         "eslint-plugin-security": "^4.0.0",
         "nodemon": "^3.1.10"

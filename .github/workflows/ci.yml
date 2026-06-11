@@ -33,9 +33,9 @@ jobs:
         working-directory: server
         run: npm run build
 
-      - name: Unit tests
+      - name: Unit tests with coverage
         working-directory: server
-        run: npm test
+        run: npm run test:coverage
 
       - name: Fuzz tests
         working-directory: server
