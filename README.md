@@ -182,6 +182,78 @@ Para remover os recursos:
 kubectl delete -f k8s/
 ```
 
+## CD, imagens Docker e HTTPS com Cert Manager
+
+A fase 10 adiciona deploy continuo com publicacao de imagens Docker no GitHub Container Registry (GHCR) e manifests Kubernetes para HTTPS via Cert Manager.
+
+Arquivos principais:
+
+- `.github/workflows/cd.yml`: workflow de CD acionado em `push` para `main` ou `master`, e tambem manualmente por `workflow_dispatch`.
+- `k8s/06-clusterissuer.yaml`: `ClusterIssuer` do Cert Manager usando Let's Encrypt.
+- `k8s/07-ingress.yaml`: `Ingress` com TLS, secret `mkjs-tls` e redirecionamento HTTP para HTTPS.
+- `k8s/04-app.yaml` e `k8s/05-web.yaml`: Deployments atualizados para usar imagens publicadas no GHCR.
+
+O workflow publica duas imagens:
+
+```text
+ghcr.io/dannyeclisson/gces-projetoindividual-backend:latest
+ghcr.io/dannyeclisson/gces-projetoindividual-backend:<SHA_DO_COMMIT>
+ghcr.io/dannyeclisson/gces-projetoindividual-web:latest
+ghcr.io/dannyeclisson/gces-projetoindividual-web:<SHA_DO_COMMIT>
+```
+
+Validacao do registry:
+
+```bash
+docker pull ghcr.io/dannyeclisson/gces-projetoindividual-web:latest
+docker pull ghcr.io/dannyeclisson/gces-projetoindividual-backend:latest
+```
+
+Secrets do GitHub Actions:
+
+- `GITHUB_TOKEN`: fornecido automaticamente pelo GitHub Actions. O workflow usa `packages: write` para publicar no GHCR.
+- Nenhum secret extra e necessario para publicar no GHCR neste fluxo.
+
+Antes de aplicar em um cluster real, ajuste:
+
+- Em `k8s/07-ingress.yaml`, troque `mkjs.example.com` pelo dominio real apontando para o Load Balancer do Ingress Controller.
+
+Observacao: o dominio Railway gerado no deploy (`app-production-1fc7.up.railway.app`) pertence ao servico hospedado na Railway e nao aponta para o Ingress Controller do Kubernetes. Por isso, ele nao deve ser usado em `k8s/07-ingress.yaml` para emissao de certificado via Cert Manager. Para Kubernetes, use um dominio seu com DNS apontando para o IP/Load Balancer do Ingress.
+
+Requisitos do cluster:
+
+- Ingress Controller compativel com `ingressClassName: nginx`, como ingress-nginx.
+- Cert Manager instalado no cluster.
+- DNS do dominio apontando para o endereco publico do Ingress Controller.
+
+Exemplo de instalacao do Cert Manager:
+
+```bash
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
+```
+
+Comandos de aplicacao:
+
+```bash
+kubectl apply -f k8s/
+kubectl get ingress
+kubectl describe certificate mkjs-tls
+kubectl get certificate,certificaterequest,order,challenge
+```
+
+Seguranca de rede:
+
+- Exposicao externa fica concentrada no Ingress, nas portas 80 e 443 do Ingress Controller.
+- HTTP e redirecionado para HTTPS via anotacoes do Nginx Ingress.
+- O backend `app` permanece `ClusterIP`, interno ao cluster.
+- O Postgres permanece `ClusterIP`, interno ao cluster.
+
+Limitacoes locais:
+
+- Em Minikube/Kind sem Load Balancer e DNS publico, o Cert Manager nao conseguira emitir certificado Let's Encrypt real.
+- Para testar localmente sem HTTPS publico, use `kubectl port-forward service/mkjs-web 8080:80`.
+- Para testar HTTPS real, use um cluster com IP publico, ingress-nginx, Cert Manager e DNS configurado.
+
 ## CI Build & Lint
 
 A fase 3 adiciona o workflow [.github/workflows/ci.yml](.github/workflows/ci.yml), que roda em `push` e `pull_request`, instala as dependências com `npm ci` e executa `npm run lint` e `npm run build` dentro de `server/`.

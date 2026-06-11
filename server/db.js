@@ -1,6 +1,8 @@
 var Pool = require('pg').Pool;
 
-var pool = new Pool({
+var pool = new Pool(process.env.DATABASE_URL ? {
+  connectionString: process.env.DATABASE_URL
+} : {
   host: process.env.POSTGRES_HOST || 'localhost',
   port: Number(process.env.POSTGRES_PORT || 5432),
   database: process.env.POSTGRES_DB || 'mkjs',

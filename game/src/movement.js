@@ -135,62 +135,130 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
   };
 
   var vid,
+      preview,
       can,
       background,
       last,
       diffCanvas,
-      initialized,
       previous = false,
       backgroundInitialized = false,
       lastPosition,
       lastMovement,
       framesWithoutMotion = 0,
+      activeStream,
+      frameTimer,
       getUserMedia =
         navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia,
       URL = w.URL || w.webkitURL || w.mozURL;
 
   Movement.init = function (options) {
-    var self = this;
-    Movement.options = options;
+    var self = this,
+      container;
+    this.stop();
+    Movement.options = options || {};
+    container = Movement.options.container ||
+      document.getElementById('webcam-parent') ||
+      document.body;
     vid = document.createElement('video');
-    document.body.appendChild(vid);
+    container.appendChild(vid);
     vid.style.position = 'absolute';
     vid.style.visibility = 'hidden';
+    vid.autoplay = true;
+    vid.muted = true;
+    vid.setAttribute('playsinline', 'playsinline');
     vid.width = Movement.constants.WIDTH;
     vid.height = Movement.constants.HEIGHT;
-    this._initCanvases();
-    getUserMedia.call(navigator, { video: true }, function (stream) {
-      if (!initialized) {
-        initialized = true;
-        vid.src = URL.createObjectURL(stream);
-        vid.play();
-        self._start();
-      }
-      initialized = true;
-    }, function () {
-      alert('Access forbidden');
-    });
+    this._initCanvases(container);
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(function (stream) {
+          self._handleStream(stream);
+        })
+        .catch(function (error) {
+          self._fail(error);
+        });
+      return;
+    }
+    if (getUserMedia) {
+      getUserMedia.call(navigator, { video: true }, function (stream) {
+        self._handleStream(stream);
+      }, function (error) {
+        self._fail(error);
+      });
+      return;
+    }
+    this._fail();
   };
 
-  Movement._initCanvases = function () {
+  Movement.stop = function () {
+    var tracks;
+    if (frameTimer) {
+      clearInterval(frameTimer);
+      frameTimer = null;
+    }
+    if (activeStream && typeof activeStream.getTracks === 'function') {
+      tracks = activeStream.getTracks();
+      for (var i = 0; i < tracks.length; i += 1) {
+        tracks[i].stop();
+      }
+    }
+    [vid, preview, can, background, last, diffCanvas].forEach(function (node) {
+      if (node && node.parentNode) {
+        node.parentNode.removeChild(node);
+      }
+    });
+    vid = preview = can = background = last = diffCanvas = null;
+    activeStream = null;
+    previous = false;
+    backgroundInitialized = false;
+    lastPosition = null;
+    lastMovement = null;
+    framesWithoutMotion = 0;
+  };
+
+  Movement._handleStream = function (stream) {
+    activeStream = stream;
+    if ('srcObject' in vid) {
+      vid.srcObject = stream;
+    } else if (URL) {
+      vid.src = URL.createObjectURL(stream);
+    }
+    vid.play();
+    this._start();
+  };
+
+  Movement._fail = function (error) {
+    var callback = Movement.options && Movement.options.error;
+    if (typeof callback === 'function') {
+      callback.call(null, error);
+    }
+    alert('Nao foi possivel acessar a webcam. Use HTTPS ou localhost e permita o acesso a camera.');
+  };
+
+  Movement._initCanvases = function (container) {
+    preview = document.createElement('canvas');
+    container.appendChild(preview);
+    preview.id = 'movementjs-main-canvas';
+    preview.style.position = 'static';
+    preview.style.visibility = 'visible';
+
     can = document.createElement('canvas');
-    document.body.appendChild(can);
-    can.id = 'movementjs-main-canvas';
+    container.appendChild(can);
     can.style.position = 'absolute';
-    can.style.visibility = 'visible';
+    can.style.visibility = 'hidden';
 
     background = document.createElement('canvas');
-    document.body.appendChild(background);
+    container.appendChild(background);
     background.style.position = 'absolute';
     background.style.visibility = 'hidden';
 
     last = document.createElement('canvas');
-    document.body.appendChild(last);
+    container.appendChild(last);
     last.style.position = 'absolute';
     last.style.visibility = 'hidden';
 
     diffCanvas = document.createElement('canvas');
-    document.body.appendChild(diffCanvas);
+    container.appendChild(diffCanvas);
     diffCanvas.style.position = 'absolute';
     diffCanvas.style.visibility = 'hidden';
 
@@ -200,8 +268,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 //    test2 = document.createElement('canvas');
 //    document.body.appendChild(test2);
 
-    diffCanvas.width = last.width = background.width = can.width = Movement.constants.WIDTH;
-    diffCanvas.height = last.height = background.height = can.height = Movement.constants.HEIGHT;
+    diffCanvas.width = last.width = background.width = can.width = preview.width =
+      Movement.constants.WIDTH;
+    diffCanvas.height = last.height = background.height = can.height = preview.height =
+      Movement.constants.HEIGHT;
 
 //    test2.width = Movement.constants.HEIGHT * 2;
 //    test2.height = 255;
@@ -213,12 +283,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
   Movement._start = function () {
     var interval = 1000 / Movement.constants.FRAME_RATE,
       self = this;
-    setInterval(function () {
+    if (frameTimer) {
+      clearInterval(frameTimer);
+    }
+    frameTimer = setInterval(function () {
       self._handleFrame();
     }, interval);
   };
 
   Movement._handleFrame = function () {
+    if (!vid || vid.readyState < 2) {
+      return;
+    }
     if (!backgroundInitialized) {
       this._initializeBackground();
       backgroundInitialized = true;
@@ -228,7 +304,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
   };
 
   Movement._processFrame = function () {
-    var data = Filters.filterImage(Filters.grayscale, vid);
+    var data;
+    preview.getContext('2d').drawImage(vid, 0, 0, preview.width, preview.height);
+    data = Filters.filterImage(Filters.grayscale, vid);
     this._putData(can, data);
     data = Filters.filterImage(Filters.difference, can, this._getData(background));
     this._putData(can, data);
